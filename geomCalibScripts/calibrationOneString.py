@@ -1,0 +1,48 @@
+import numpy as np
+import subprocess
+
+import matplotlib.pyplot as plot
+
+#general function for ray and singleray    
+def runRaytracer(executable,radius, src_z, trg_z, extra_args = ""): 
+    """ Format coordinates into string, run string with subprocess, parse output, return float. """
+    cmdRaytracer = executable 
+    cmdRaytracer += " %f %f %f " % (radius,src_z,trg_z)
+    cmdRaytracer += extra_args 
+    cmdRaytracer_output = subprocess.check_output([cmdRaytracer], shell = True)
+    Output = cmdRaytracer_output.split("\n") 
+        
+    try: 
+            return float(Output[0].split()[0])
+
+    except ValueError:
+        return -1
+
+R1 = np.linspace(25,45,num=40)
+antDepthTV = -161.34
+antDepthBV = -191.28
+calDepth = -173.74
+
+
+#t = runRaytracer("/home/mbamass/ARA/radiosplineNew/radiospline/build/radiospline-prefix/src/radiospline-build/./ray -a --", r1, antDepthTV, calDepth, extra_args = "")
+
+def constructChi2(R1,antDepthTV, antDepthBV, calDepth):
+    ch2 = []
+    for r1 in R1:
+        tTV = runRaytracer("/home/mbamass/ARA/radiosplineNew/radiospline/build/radiospline-prefix/src/radiospline-build/./ray -a --", r1, antDepthTV, calDepth, extra_args = "")
+        #print tTV
+        tBV = runRaytracer("/home/mbamass/ARA/radiosplineNew/radiospline/build/radiospline-prefix/src/radiospline-build/./ray -a --", r1, antDepthBV, calDepth, extra_args = "")
+        delay = tBV - tTV
+        ch2.append((14.3 - delay)*(14.3 - delay)/14.3)
+    return ch2
+
+ch2 = constructChi2(R1,antDepthTV,antDepthBV,calDepth)
+#for i in ch2:
+#    print i
+
+print(R1[np.argmin(ch2)])
+
+fig = plot.figure(figsize=(10,10))
+ax = fig.add_subplot(1,1,1)
+ax.plot(R1,ch2)
+fig.savefig("/home/rkhandelwal/public_html/firstPlotD3.png")
